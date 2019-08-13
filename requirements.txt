@@ -1,0 +1,7 @@
+hyperopt
+joblib==0.12.5
+numpy
+pandas
+pymongo
+pytest
+tqdm
