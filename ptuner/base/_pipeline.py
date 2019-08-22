@@ -36,7 +36,7 @@ class BasePipelineTuner(ABC):
         lower_is_better: bool, 
         n_jobs: int, 
         backend: str = 'threading',
-        experiment_name: str,
+        experiment_name: str = 'ptuner',
         save_name: Optional[str] = None
         ) -> None:
         # Calculate number of jobs for parallel processing

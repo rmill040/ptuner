@@ -8,8 +8,11 @@ import time
 from tqdm import trange
 from typing import Any, cast, Dict, List, Optional, Tuple
 
+# Constants
+STATUS_FAIL: str = "FAIL"
+STATUS_OK: str  = "OK"
+
 # Custom imports
-from ptuner import STATUS_FAIL, STATUS_OK
 from .base._pipeline import BasePipelineTuner
 from .db import init_collection, is_running, MongoError, MongoWorker
 from .spaces import SpaceSampler 
@@ -293,11 +296,11 @@ class ParallelPipelineTuner(BasePipelineTuner):
     db_port : int
         Port for MongoDB instance
 
-    role : str
-        Master or worker
-
     lower_is_better : bool
         Whether lower metrics indicate better performance
+
+    role : str
+        Master or worker
 
     n_jobs : int
         Number of parallel workers
@@ -312,11 +315,11 @@ class ParallelPipelineTuner(BasePipelineTuner):
         Name of file for saving    
     """
     def __init__(
-        self, 
+        self,
         db_host: str, 
         db_port: int, 
-        role: str = 'master',
         lower_is_better: bool,
+        role: str = 'master',
         n_jobs: int = -1,
         backend: str = 'threading',
         experiment_name: str = 'ptuner', 

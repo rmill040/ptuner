@@ -24,19 +24,19 @@ class NaiveFeatureSampler(BaseSampler):
     
     Parameters
     ----------
-    dynamic_update : bool
-        Whether to update hyperparameter distributions
-
     p : int
         Number of features in original space
+
+    dynamic_update : bool
+        Whether to update hyperparameter distributions
 
     muting_threshold : float
         Threshold for muting features during sampling
     """
     def __init__(
         self, 
-        dynamic_update: bool, 
         p: int, 
+        dynamic_update: bool = True, 
         muting_threshold: float = .30
         ) -> None:
 
@@ -47,7 +47,7 @@ class NaiveFeatureSampler(BaseSampler):
         self.muting_threshold: np.ndarry = muting_threshold
         self.selection_probs: np.ndarry  = np.array([.5]*self.p)
         self.space: Any                  = self._starting_space()
-        super().__init__()
+        super().__init__(dynamic_update=dynamic_update)
 
 
     def __str__(self) -> str:
