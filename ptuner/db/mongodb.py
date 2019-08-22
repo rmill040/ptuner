@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from typing import Any, Optional, Tuple
 
 # Custom imports
-from ..utils.constants import DB_NAME # type: ignore
+from ..utils.constants import DB_NAME
 
 __all__ = [
     "init_collection",

@@ -9,6 +9,7 @@ from tqdm import trange
 from typing import Any, cast, Dict, List, Optional, Tuple
 
 # Custom imports
+from ptuner import STATUS_FAIL, STATUS_OK
 from .base._pipeline import BasePipelineTuner
 from .db import init_collection, is_running, MongoError, MongoWorker
 from .spaces import SpaceSampler 
@@ -24,19 +25,25 @@ class LocalPipelineTuner(BasePipelineTuner):
     ----------
     lower_is_better : bool
         Whether lower metrics indicate better performance
-    
-    experiment_name : str
-        Name of experiment that will be the collections name in MongoDB
-    
+
     n_jobs : int
         Number of parallel workers
+
+    backend : str
+        Backend for parallel processing using joblib
+
+    experiment_name : str
+        Name of experiment
+    
+    save_name : str
+        Name of file for saving
     """
     def __init__(
         self, 
         lower_is_better: bool,
-        experiment_name: str = 'ptuner', 
         n_jobs: int = -1,
         backend: str = 'threading',
+        experiment_name: str = 'ptuner', 
         save_name: Optional[str] = None
         ) -> None:
 
@@ -44,7 +51,8 @@ class LocalPipelineTuner(BasePipelineTuner):
             lower_is_better=lower_is_better, 
             experiment_name=experiment_name,
             n_jobs=n_jobs,
-            backend=backend
+            backend=backend,
+            save_name=save_name
             )
 
         self.history: List[Any]           = []
@@ -52,21 +60,27 @@ class LocalPipelineTuner(BasePipelineTuner):
         self.best_results['metric']       = \
             np.inf if self.lower_is_better else -np.inf
         self.best_results['params']       = None
-        
-        # Name of results file
-        self.save_name = save_name if save_name else experiment_name + '.csv'
 
 
     def _export_all_results(self) -> None:
         """Export all search results to .csv file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
         """
-        try:
-            pd.concat([pd.DataFrame(h) for h in self.history], axis=0)\
-                .sort_values('metric', ascending=self.lower_is_better)\
-                .to_csv(self.save_name, index=False)
-            _LOGGER.info("exported all results to disk at %s" % self.save_name)
-        except Exception as e:
-            _LOGGER.error("error exporting all results because %s" % e)
+        if self.save_name:
+            try:
+                pd.concat([pd.DataFrame(h) for h in self.history], axis=0)\
+                    .sort_values('metric', ascending=self.lower_is_better)\
+                    .to_csv(self.save_name, index=False)
+                _LOGGER.info("exported all results to disk at %s" % self.save_name)
+            except Exception as e:
+                _LOGGER.error("error exporting all results because %s" % e)
 
 
     def _update_space(
@@ -118,7 +132,7 @@ class LocalPipelineTuner(BasePipelineTuner):
     
     def _evaluate_candidate( #type: ignore
         self, 
-        objective: Any, 
+        objective: Any,
         candidate: Dict[str, Any], 
         i: int, 
         n_candidates: int
@@ -154,7 +168,7 @@ class LocalPipelineTuner(BasePipelineTuner):
             )
 
         # Check if failure occurred during objective func evaluation
-        if 'FAIL' in results['status'].upper() or 'OK' not in results['status'].upper():
+        if STATUS_FAIL in results['status'].upper() or STATUS_OK not in results['status'].upper():
             msg: str = "running candidate failed"
             if 'message' in results.keys():
                 if results['message']: msg += ' because %s' % results['message']
@@ -202,6 +216,16 @@ class LocalPipelineTuner(BasePipelineTuner):
         ----------
         objective : function
             Function to optimize that returns evaluation metric
+
+        sampler : SpaceSampler
+            Instantiated SpaceSampler
+
+        max_configs_per_round : list
+            List with maximum number of configurations per round
+
+        subsample_factor : int
+            Factor used to subsample number of configurations for determining size 
+            of hof for current round
 
         Returns
         -------
@@ -269,34 +293,42 @@ class ParallelPipelineTuner(BasePipelineTuner):
     db_port : int
         Port for MongoDB instance
 
-    lower_is_better : bool
-        Whether lower metrics indicate better performance
-    
-    experiment_name : str
-        Name of experiment that will be the collections name in MongoDB
-    
     role : str
         Master or worker
-    
+
+    lower_is_better : bool
+        Whether lower metrics indicate better performance
+
     n_jobs : int
         Number of parallel workers
+    
+    backend : str
+        Backend for parallel processing using joblib
+
+    experiment_name : str
+        Name of experiment
+
+    save_name : str
+        Name of file for saving    
     """
     def __init__(
         self, 
         db_host: str, 
         db_port: int, 
+        role: str = 'master',
         lower_is_better: bool,
-        experiment_name: str ='ptuner', 
-        role: str ='master',
         n_jobs: int = -1,
-        backend: str = 'threading'
+        backend: str = 'threading',
+        experiment_name: str = 'ptuner', 
+        save_name: Optional[str] = None
         ) -> None:
 
         super().__init__(                       
             lower_is_better=lower_is_better, 
             experiment_name=experiment_name,
             n_jobs=n_jobs,
-            backend=backend
+            backend=backend,
+            save_name=save_name
             )
 
         # Dictionary to hold best results after searching complete
@@ -362,14 +394,23 @@ class ParallelPipelineTuner(BasePipelineTuner):
 
 
     def _export_all_results(self) -> None:
-        """Export all search results to .csv file.        
+        """Export all search results to .csv file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None     
         """
-        with MongoWorker(collection=self.experiment_name, **self._mongo_params) as db: 
-            pd.DataFrame.from_records(db.find())\
-                .drop('_id', axis=1)\
-                .to_csv(self.experiment_name + '.csv', index=False)
-        _LOGGER.info("results written to %s.csv" % self.experiment_name)
-    
+        if self.save_name:
+            with MongoWorker(collection=self.experiment_name, **self._mongo_params) as db: 
+                pd.DataFrame.from_records(db.find())\
+                    .drop('_id', axis=1)\
+                    .to_csv(self.experiment_name + '.csv', index=False)
+            _LOGGER.info("results written to %s.csv" % self.experiment_name)
+        
 
     def _select_best(self) -> Tuple[Any, Any]:
         """Selects top metric and configuration so far in the search.

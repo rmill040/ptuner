@@ -2,7 +2,8 @@ from hyperopt import hp
 from hyperopt.pyll.stochastic import sample
 from math import log
 import numpy as np
-from typing import Any, Dict
+import pandas as pd
+from typing import Any, Dict, List, Optional, Tuple
 
 # Custom imports
 from ..base._sampler import BaseSampler
@@ -13,34 +14,73 @@ __all__ = [
 ]
 
 class MLPClassifierSampler(BaseSampler):
-    """ADD
+    """Space sampler for MLP classifier.
     
     Parameters
     ----------
+    dynamic_update : bool
+        Whether to update hyperparameter distributions
+    
+    early_stopping : bool
+        Whether early stopping is enabled during training
+
+    n_hidden_layers : int
+        Number of hidden layers in the neural network
+
+    max_neurons : int
+        Maximum number of neurons to test in a hidden layer
+    
+    max_epochs : int
+        Maximum number of epochs to test during training
+    
+    seed : int
+        Random seed
     """
     def __init__(
         self, 
-        dynamic_update=True,
-        early_stopping=True, 
-        n_hidden_layers=1, 
-        max_neurons=512,
-        max_epochs=10,
-        seed=None
-        ):
-        self.n_hidden_layers  = n_hidden_layers
-        self.max_neurons      = max_neurons
-        self.max_epochs       = max_epochs
-        self.early_stopping   = early_stopping
+        dynamic_update: bool = True,
+        early_stopping: bool = True, 
+        n_hidden_layers: int = 1, 
+        max_neurons: int = 512,
+        max_epochs: int = 10,
+        seed: Optional[int] = None
+        ) -> None:
+        self.n_hidden_layers: int = n_hidden_layers
+        self.max_neurons: int     = max_neurons
+        self.max_epochs: int      = max_epochs
+        self.early_stopping: bool = early_stopping
         super().__init__(dynamic_update=dynamic_update, seed=seed)
     
 
     def __str__(self) -> str:
+        """Print string representation of class.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        str
+            Name of class
+        """
         return "MLPClassifierSampler"
 
 
-    def _starting_space(self) -> Dict[str, Any]:
-        """ADD HERE"""
-        params                    = {}
+    def _starting_space(self) -> Any:
+        """Create starting space for sampler.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        dict
+            Key/value pairs, key is hyperparameter name and value is statistical 
+            distribution that can be sampled
+        """
+        params: Dict[str, Any]    = {}
         params['n_hidden_layers'] = self.n_hidden_layers
 
         # Add all hidden layer units
@@ -61,11 +101,22 @@ class MLPClassifierSampler(BaseSampler):
         return params
 
 
-    def sample_space(self) -> Dict[str, Any]:
-        """ADD DESCRIPTION"""
-        hypers = {}
+    def sample_space(self) -> Any:
+        """Sample from hyperparameter distributions.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        dict
+            Key/value pairs, key is hyperparameter name and value is a sample from
+            the hyperparemeter's statistical distribution
+        """
+        hypers: Dict[str, Any] = {}
         for param, dist in self.space.items():
-            value = sample(dist)
+            value: Any = sample(dist)
             if 'hidden' in param or param in ['epochs', 'batch_size']:
                 hypers[param] = int(value)
             else:
@@ -76,14 +127,17 @@ class MLPClassifierSampler(BaseSampler):
         return hypers
 
 
-    def update_space(self, data) -> None:
-        """ADD
+    def update_space(self, data: pd.DataFrame) -> None:
+        """Update hyperparameter distributions.
         
         Parameters
         ----------
+        data : pandas DataFrame
+            Results of hyperparameter configurations tested
         
         Returns
         -------
+        None
         """        
         if not self.dynamic_update: return
     
@@ -91,13 +145,13 @@ class MLPClassifierSampler(BaseSampler):
         for param in self.space.keys():
             
             if param in ['batch_norm', 'optimizer']:
-                pchoice = data[param].value_counts(True).sort_index().to_dict()
-                pchoice = [(value, key) for key, value in pchoice.items()]
+                pchoice: Dict[Any, Any]           = data[param].value_counts(True).sort_index().to_dict() 
+                pchoice_hp: List[Tuple[Any, Any]] = [(value, key) for key, value in pchoice.items()]
                 
                 # Update label
-                label             = 'bn' if param == 'batch_norm' else 'opt'
+                label: str        = 'bn' if param == 'batch_norm' else 'opt'
                 label             = 'mlp_' + label
-                self.space[param] = hp.pchoice(label, pchoice)
+                self.space[param] = hp.pchoice(label, pchoice_hp)
             else:
                 # Min and max values of current parameter
                 min_value, max_value = data[param].min(), data[param].max()
@@ -131,29 +185,56 @@ class MLPClassifierSampler(BaseSampler):
 
 
 class XGBClassifierSampler(BaseSampler):
-    """ADD
+    """Space sampler for XGB classifier.
     
     Parameters
     ----------
+    dynamic_update : bool
+        Whether to update hyperparameter distributions
+    
+    early_stopping : bool
+        Whether early stopping is enabled during training
+    
+    seed : int
+        Random seed
     """
     def __init__(
         self, 
-        dynamic_update=True, 
-        early_stopping=True, 
-        seed=1718
+        dynamic_update: bool = True, 
+        early_stopping: bool = True, 
+        seed: int = 1718
         ) -> None:
-        self.early_stopping = early_stopping
+        self.early_stopping: bool = early_stopping
         super().__init__(dynamic_update=dynamic_update, seed=seed)
 
 
     def __str__(self) -> str:
-        """ADD HERE.
+        """Print string representation of class.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        str
+            Name of class
         """
         return "XGBClassifierSampler"
 
 
-    def _starting_space(self) -> Dict[str, Any]:
-        """ADD HERE.
+    def _starting_space(self) -> Any:
+        """Create starting space for sampler.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        dict
+            Key/value pairs, key is hyperparameter name and value is statistical 
+            distribution that can be sampled
         """
         return {
             'n_estimators'      : hp.quniform('xgb_ne', 10, 2000, 1),
@@ -172,17 +253,20 @@ class XGBClassifierSampler(BaseSampler):
             }
 
 
-    def sample_space(self) -> Dict[str, Any]:
-        """ADD DESCRIPTION.
-        
+    def sample_space(self) -> Any:
+        """Sample from hyperparameter distributions.
+
         Parameters
         ----------
         None
 
         Returns
         -------
+        dict
+            Key/value pairs, key is hyperparameter name and value is a sample from
+            the hyperparemeter's statistical distribution
         """
-        hypers = {}
+        hypers: Dict[str, Any] = {}
         for param, dist in self.space.items():
             hypers[param] = int(sample(dist)) \
                 if param in ['n_estimators', 'max_delta_step', 'max_depth', 'min_child_weight'] \
@@ -194,14 +278,17 @@ class XGBClassifierSampler(BaseSampler):
         return hypers
 
 
-    def update_space(self, data: Any) -> None:
-        """ADD
+    def update_space(self, data: pd.DataFrame) -> None:
+        """Update hyperparameter distributions.
         
         Parameters
         ----------
+        data : pandas DataFrame
+            Results of hyperparameter configurations tested
         
         Returns
         -------
+        None
         """    
         if not self.dynamic_update: return
 

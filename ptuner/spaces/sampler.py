@@ -1,12 +1,65 @@
 from collections import namedtuple
 import numpy as np
+import re
+from scipy.optimize import minimize
+from scipy.stats import norm
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import ConstantKernel, Matern
 from typing import Any, Dict, List, Optional
+
 
 __all__ = [
     "SpaceSampler"
 ]
 
-# TODO: ADD LOGGER HERE
+# 1. Gather initial samples
+# 2. For round > 1, fit GPR and select optimal points maximizing acquisition function
+# 3. Consider adjusting exploration vs exploitation parameter as search continues
+
+
+
+# class GPCandidateSelector:
+#     """Gaussian process candidate selector -- ADD MORE LATER.
+
+#     Parameters
+#     ----------
+#     """
+#     def __init__(self, kernel=None):
+#         pass
+
+#         # if kernel is None:
+#         #     kernel = ConstantKernel(1.0) * Matern(length_scale=1.0, nu=2.5)
+#         # self.gpr = GaussianProcessRegressor(kernel=kernel, alpha=noise**2)
+
+
+#     def _parse_hyperopt_param(self, string: str) -> Any:
+#         """ADD
+        
+#         Parameters
+#         ----------
+        
+#         Returns
+#         -------
+#         """
+#         param_type: str = re.findall('categorical|quniform|uniform|loguniform', string)[0]
+#         if param_type == 'categorical':
+#             raise ValueError("categorical bounds not supported")
+#         else:
+#             return param_type, list(map(float, re.findall("[Literal{}](-*\d+\.*\d*)", string)[:2]))
+
+
+#     def select_best_points(self, sampler: SpaceSampler, n: int):
+#         """ADD
+        
+#         Parameters
+#         ----------
+        
+#         Returns
+#         -------
+#         """
+#         pass
+        
+    
 
 NAMED_SAMPLER: namedtuple = namedtuple("Sampler", "name sampler")
 
@@ -59,7 +112,7 @@ class SpaceSampler:
         Returns
         -------
         """
-        assert(self._initialized), "[error] no samplers detected"
+        assert(self._initialized), "no samplers detected"
 
         # Sampler spaces
         params: Dict[str, Any] = {}
@@ -73,9 +126,9 @@ class SpaceSampler:
 
 
     def update_space(
-        self, 
-        data_features:Optional[Any], 
-        data_hyperparameters:Optional[Any]
+        self,
+        data_features: Optional[Any], 
+        data_hyperparameters: Optional[Any]
         ) -> None:
         """ADD
         
@@ -85,7 +138,7 @@ class SpaceSampler:
         Returns
         -------
         """
-        assert(self._initialized), "[error] no samplers detected"
+        assert(self._initialized), "no samplers detected"
 
         # Update spaces
         if self.feature_sampler:
@@ -93,3 +146,15 @@ class SpaceSampler:
         if self.hyperparameter_samplers:
             for s in self.hyperparameter_samplers:
                 s.sampler.update_space(data_hyperparameters)
+
+
+# if __name__ == "__main__":
+#     from hyperopt import hp
+#     from math import log
+#     selector = GPCandidateSelector()
+#     for param in [
+#         hp.uniform('xgb_cbl', 0.20, 1.0),
+#         hp.loguniform('xgb_ra', log(1e-10), log(1e-1)),
+#         hp.quniform('xgb_mds', 0, 3, 1)
+#         ]:
+#         print(selector._parse_hyperopt_param(param.__str__()))

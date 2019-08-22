@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from multiprocessing import cpu_count
-from typing import Any, List
+from typing import Any, List, Optional, Dict
 
 # Custom imports
-from ..spaces import SpaceSampler
+from ..spaces.sampler import SpaceSampler
 
 __all__ = [
     "BasePipelineTuner"
@@ -15,25 +15,29 @@ class BasePipelineTuner(ABC):
     
     Parameters
     ----------
+    lower_is_better : bool
+        Whether lower metric indicates better performance
+
     n_jobs : int
         Number of jobs
     
-    lower_is_better : bool
-        Whether lower metric indicates better performance
+    backend : str
+        Backend for parallel processing using joblib
     
     experiment_name : str
         Name of experiment
     
-    backend : str
-        Backend for parallel processing using joblib
+    save_name : str
+        Name of file for saving
     """
     @abstractmethod
     def __init__(
         self, 
-        n_jobs: int, 
         lower_is_better: bool, 
+        n_jobs: int, 
+        backend: str = 'threading',
         experiment_name: str,
-        backend: str = 'threading'
+        save_name: Optional[str] = None
         ) -> None:
         # Calculate number of jobs for parallel processing
         max_cpus: int = cpu_count()
@@ -56,17 +60,43 @@ class BasePipelineTuner(ABC):
             )
         self.backend: str = backend
 
+        self.save_name = save_name
+
     
     @abstractmethod
     def _export_all_results(self) -> None:
         """Export all results from search.
+        
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
         """
         pass
 
 
     @abstractmethod
-    def _evaluate_candidate(self, objective: Any) -> Any:
+    def _evaluate_candidate(
+        self, 
+        objective: Any
+        ) -> Any:
         """Evaluate current candidate configuration.
+
+        Parameters
+        ----------
+        objective : function
+            Function to optimize that returns evaluation metric
+
+        Returns
+        -------
+        dict
+            Evaluation results for current candidate configuration
+        
+        str
+            Status of objective function evaluation
         """
         pass
 
@@ -78,7 +108,23 @@ class BasePipelineTuner(ABC):
         hof: int,
         n_round: int
         ) -> SpaceSampler:
-        """Update sampler space.
+        """Updates search space.
+        
+        Parameters
+        ----------    
+        sampler : SpaceSampler
+            Instantiated SpaceSampler
+
+        hof : int
+            Number of top configurations to keep
+        
+        n_round : int
+            Round number for search
+        
+        Returns
+        -------
+        sampler : SpaceSampler
+            SpaceSampler with updated space distributions
         """
         pass
 
@@ -88,9 +134,29 @@ class BasePipelineTuner(ABC):
         self, 
         objective: Any, 
         sampler: SpaceSampler, 
-        max_configs_per_round: List[int], 
+        max_configs_per_round: List[int],
         subsample_factor: int
         ) -> None: 
-        """Begin dynamic random search.
+        """Run search for best hyperparameters and/or features based on provided 
+        objective function.
+        
+        Parameters
+        ----------
+        objective : function
+            Function to optimize that returns evaluation metric
+
+        sampler : SpaceSampler
+            Instantiated SpaceSampler
+
+        max_configs_per_round : list
+            List with maximum number of configurations per round
+
+        subsample_factor : int
+            Factor used to subsample number of configurations for determining size 
+            of hof for current round
+
+        Returns
+        -------
+        None
         """
         pass

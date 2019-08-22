@@ -110,9 +110,10 @@ if __name__ == "__main__":
 
     tuner = LocalPipelineTuner(
         lower_is_better=False,
-        experiment_name='ptuner', 
+        experiment_name='ptuner',
         n_jobs=-1,
-        backend='threading'
+        backend='threading',
+        save_name=None # None means do not save results to disk
     )
 
     tuner.search(
