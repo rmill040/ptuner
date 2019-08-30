@@ -29,6 +29,9 @@ class BasePipelineTuner(ABC):
     
     save_name : str
         Name of file for saving
+
+    verbose : bool
+        Whether to use verbose logging
     """
     @abstractmethod
     def __init__(
@@ -37,7 +40,8 @@ class BasePipelineTuner(ABC):
         n_jobs: int, 
         backend: str = 'threading',
         experiment_name: str = 'ptuner',
-        save_name: Optional[str] = None
+        save_name: Optional[str] = None,
+        verbose: bool = True
         ) -> None:
         # Calculate number of jobs for parallel processing
         max_cpus: int = cpu_count()
@@ -58,9 +62,9 @@ class BasePipelineTuner(ABC):
                 "backend (%s) not a valid argument, " % backend, 
                 "use loky, threading, or multiprocessing"
             )
-        self.backend: str = backend
-
-        self.save_name = save_name
+        self.backend: str   = backend
+        self.save_name: str = save_name
+        self.verbose: bool  = verbose
 
     
     @abstractmethod

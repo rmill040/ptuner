@@ -1,15 +1,17 @@
 import logging
 import random
+import re
 import socket
 import time
-
-_LOGGER = logging.getLogger(__name__)
+from typing import Any
 
 __all__ = [
     "get_hostname",
     "get_ip_address",
     "countdown"
     ]
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def get_hostname() -> str:
@@ -77,3 +79,32 @@ def countdown(message: str, t: int) -> None:
         print(timeformat, end='\r')
         time.sleep(1)
         t -= 1
+
+
+def parse_hyperopt_param(string: str) -> Any:
+    """Parses lower and upper bounds from string representation of hyperopt
+    parameter.
+    
+    Parameters
+    ----------
+    string : str
+        String representation of hyperopt parameter
+    
+    Returns
+    -------
+    param_type : str
+        Type of parameter
+
+    parsed : list
+        Lower and upper bounds of parameter
+    """
+    param_type: str = re.findall('categorical|quniform|uniform|loguniform', string)[0]
+    if param_type == 'categorical':
+        raise ValueError("categorical bounds not supported")
+    else:
+        # Get all the Literal{} entries
+        string = ' '.join(re.findall("Literal{-*\d+\.*\d*}", string))
+
+        # Parse all the numbers within the {} and map to float
+        parsed = list(map(float, re.findall("[Literal{}](-*\d+\.*\d*)", string)))
+        return param_type, parsed[:2]

@@ -113,7 +113,7 @@ if __name__ == "__main__":
         experiment_name='ptuner',
         n_jobs=-1,
         backend='threading',
-        save_name=None # None means do not save results to disk
+        save_name=None # None means do not save results to disk,
     )
 
     tuner.search(

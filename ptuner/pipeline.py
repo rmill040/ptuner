@@ -18,6 +18,13 @@ from .db import init_collection, is_running, MongoError, MongoWorker
 from .spaces import SpaceSampler 
 from .utils.helper import countdown, get_hostname
 
+__all__ = [
+    "LocalPipelineTuner",
+    "ParallelPipelineTuner",
+    "STATUS_FAIL",
+    "STATUS_OK"
+]
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -40,6 +47,9 @@ class LocalPipelineTuner(BasePipelineTuner):
     
     save_name : str
         Name of file for saving
+
+    verbose : bool
+        Whether to use verbose logging
     """
     def __init__(
         self, 
@@ -47,7 +57,8 @@ class LocalPipelineTuner(BasePipelineTuner):
         n_jobs: int = -1,
         backend: str = 'threading',
         experiment_name: str = 'ptuner', 
-        save_name: Optional[str] = None
+        save_name: Optional[str] = None,
+        verbose: bool = True
         ) -> None:
 
         super().__init__(                       
@@ -55,8 +66,12 @@ class LocalPipelineTuner(BasePipelineTuner):
             experiment_name=experiment_name,
             n_jobs=n_jobs,
             backend=backend,
-            save_name=save_name
+            save_name=save_name,
+            verbose=verbose
             )
+
+        # Reduce verbosity of logger
+        if not self.verbose: logging.getLogger().setLevel(logging.WARN)
 
         self.history: List[Any]           = []
         self.best_results: Dict[str, Any] = Manager().dict()
@@ -313,6 +328,9 @@ class ParallelPipelineTuner(BasePipelineTuner):
 
     save_name : str
         Name of file for saving    
+
+    verbose : bool
+        Whether to use verbose logging
     """
     def __init__(
         self,
@@ -323,7 +341,8 @@ class ParallelPipelineTuner(BasePipelineTuner):
         n_jobs: int = -1,
         backend: str = 'threading',
         experiment_name: str = 'ptuner', 
-        save_name: Optional[str] = None
+        save_name: Optional[str] = None,
+        verbose: bool = True
         ) -> None:
 
         super().__init__(                       
@@ -331,8 +350,12 @@ class ParallelPipelineTuner(BasePipelineTuner):
             experiment_name=experiment_name,
             n_jobs=n_jobs,
             backend=backend,
-            save_name=save_name
+            save_name=save_name,
+            verbose=verbose
             )
+
+        # Reduce verbosity of logger
+        if not self.verbose: logging.getLogger().setLevel(logging.WARN)
 
         # Dictionary to hold best results after searching complete
         self.best_results: Dict[str, Any] = {}

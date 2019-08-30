@@ -86,6 +86,7 @@ class SpaceSampler:
         """
         self.feature_sampler = NAMED_SAMPLER(name=name, sampler=sampler)
         self._initialized    = True
+        return self
     
 
     def add_hyperparameter_sampler(self, sampler: Any, name: str) -> None:
@@ -101,6 +102,7 @@ class SpaceSampler:
             NAMED_SAMPLER(name=name, sampler=sampler)
         )
         self._initialized = True
+        return self
 
 
     def sample_space(self) -> Dict[str, Any]:

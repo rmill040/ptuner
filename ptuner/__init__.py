@@ -8,8 +8,7 @@ from ptuner.utils import constants as c
 from ptuner.pipeline import (LocalPipelineTuner, ParallelPipelineTuner, 
                              STATUS_FAIL, STATUS_OK)
 
-logging.basicConfig(level=logging.INFO,
-                    format=c.FORMAT)
+logging.basicConfig(level=logging.INFO, format=c.FORMAT)
 
 # Create custom logger
 logger: Any = logging.getLogger(__name__)

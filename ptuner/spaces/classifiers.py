@@ -15,6 +15,8 @@ __all__ = [
 
 class MLPClassifierSampler(BaseSampler):
     """Space sampler for MLP classifier.
+
+    NOTE: This experimental and should be used with caution.
     
     Parameters
     ----------
@@ -185,7 +187,7 @@ class MLPClassifierSampler(BaseSampler):
 
 
 class XGBClassifierSampler(BaseSampler):
-    """Space sampler for XGB classifier.
+    """Space sampler for XGB tree classifier.
     
     Parameters
     ----------
@@ -273,7 +275,7 @@ class XGBClassifierSampler(BaseSampler):
                     else sample(dist)
         
         # Add seed
-        hypers['seed'] = self.seed
+        hypers['random_state'] = self.seed
 
         return hypers
 
@@ -341,3 +343,13 @@ class XGBClassifierSampler(BaseSampler):
             
             else:
                 raise ValueError("%s param not found in sample space" % param)
+
+
+class LightGBMClassifierSampler(BaseSampler):
+    # TODO: ADD HERE
+    pass
+
+
+class SkGBMClassifierSampler(BaseSampler):
+    # TODO: ADD HERE
+    pass
