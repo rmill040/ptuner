@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from typing import Any, Optional, Tuple
 
-# Custom imports
+# Package imports
 from ..utils.constants import DB_NAME
 
 __all__ = [

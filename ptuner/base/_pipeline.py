@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from multiprocessing import cpu_count
 from typing import Any, List, Optional, Dict
 
-# Custom imports
+# Package imports
 from ..spaces.sampler import SpaceSampler
 
 __all__ = [

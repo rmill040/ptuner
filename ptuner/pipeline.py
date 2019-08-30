@@ -12,7 +12,7 @@ from typing import Any, cast, Dict, List, Optional, Tuple
 STATUS_FAIL: str = "FAIL"
 STATUS_OK: str  = "OK"
 
-# Custom imports
+# Package imports
 from .base._pipeline import BasePipelineTuner
 from .db import init_collection, is_running, MongoError, MongoWorker
 from .spaces import SpaceSampler 

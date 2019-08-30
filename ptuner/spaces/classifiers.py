@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from typing import Any, Dict, List, Optional, Tuple
 
-# Custom imports
+# Package imports
 from ..base._sampler import BaseSampler
 
 __all__ = [
@@ -170,8 +170,8 @@ class MLPClassifierSampler(BaseSampler):
                 
                 # Do not update epochs if early stopping enabled
                 elif param == 'epochs':
-                    if self.early_stopping: continue
-                    self.space[param] = hp.quniform('mlp_e', min_value, max_value, 1)
+                    if not self.early_stopping: 
+                        self.space[param] = hp.quniform('mlp_e', min_value, max_value, 1)
 
                 elif param == 'batch_size':
                     self.space[param] = hp.quniform('mlp_bs', min_value, max_value, 1)
@@ -302,10 +302,10 @@ class XGBClassifierSampler(BaseSampler):
             
             # Do not update n_estimators if early_stopping enabled
             if param == 'n_estimators':
-                if self.early_stopping: continue
-                self.space[param] = hp.quniform('xgb_ne', min_value, max_value, 1)
+                if not self.early_stopping:
+                    self.space[param] = hp.quniform('xgb_ne', min_value, max_value, 1)
             
-            if param == 'learning_rate':
+            elif param == 'learning_rate':
                 self.space[param] = hp.loguniform('xgb_lr', log(min_value), log(max_value))
             
             elif param == 'max_depth': 

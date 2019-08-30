@@ -16,8 +16,6 @@ __all__ = [
 # 2. For round > 1, fit GPR and select optimal points maximizing acquisition function
 # 3. Consider adjusting exploration vs exploitation parameter as search continues
 
-
-
 # class GPCandidateSelector:
 #     """Gaussian process candidate selector -- ADD MORE LATER.
 
@@ -59,15 +57,15 @@ __all__ = [
 #         """
 #         pass
         
-    
 
 NAMED_SAMPLER: namedtuple = namedtuple("Sampler", "name sampler")
 
 class SpaceSampler:
-    """ADD
+    """Space sampler for features and hyperparameters.
     
     Parameters
     ----------
+    None
     """
     def __init__(self) -> None:
         self.feature_sampler: Optional[Any]     = None
@@ -76,13 +74,20 @@ class SpaceSampler:
 
 
     def add_feature_sampler(self, sampler: Any, name: str) -> None:
-        """ADD
+        """Add feature sampler to sampling scheme.
         
         Parameters
         ----------
+        sampler : feature sampler
+            Instantiated feature sampler class
+        
+        name : str
+            Name of feature sampler
         
         Returns
         -------
+        self : SpaceSampler
+            Instance of SpaceSampler
         """
         self.feature_sampler = NAMED_SAMPLER(name=name, sampler=sampler)
         self._initialized    = True
@@ -90,13 +95,20 @@ class SpaceSampler:
     
 
     def add_hyperparameter_sampler(self, sampler: Any, name: str) -> None:
-        """ADD
+        """Add hyperparameter sampler to sampling scheme.
         
         Parameters
         ----------
+        sampler : hyperparameter sampler
+            Instantiated hyperparameter sampler class
+
+        name : str
+            Name of hyperparameter sampler
         
         Returns
         -------
+        self : SpaceSampler
+            Instance of SpaceSampler
         """
         self.hyperparameter_samplers.append(
             NAMED_SAMPLER(name=name, sampler=sampler)
@@ -106,13 +118,16 @@ class SpaceSampler:
 
 
     def sample_space(self) -> Dict[str, Any]:
-        """ADD
+        """Sample feature and/or hyperparameter spaces.
         
         Parameters
         ----------
+        None
         
         Returns
         -------
+        params : dict
+            Key/value pairs where samplers are referred to by user-defined names
         """
         assert(self._initialized), "no samplers detected"
 
@@ -132,13 +147,19 @@ class SpaceSampler:
         data_features: Optional[Any], 
         data_hyperparameters: Optional[Any]
         ) -> None:
-        """ADD
+        """Update feature and/or hyperparameter spaces.
         
         Parameters
         ----------
+        data_features : pandas DataFrame
+            Input data containing results from feature sampling configurations
+
+        data_hyperparameters : pandas DataFrame
+            Input data containing results from hyperparameter sampling configurations
         
         Returns
         -------
+        None
         """
         assert(self._initialized), "no samplers detected"
 
@@ -148,15 +169,3 @@ class SpaceSampler:
         if self.hyperparameter_samplers:
             for s in self.hyperparameter_samplers:
                 s.sampler.update_space(data_hyperparameters)
-
-
-# if __name__ == "__main__":
-#     from hyperopt import hp
-#     from math import log
-#     selector = GPCandidateSelector()
-#     for param in [
-#         hp.uniform('xgb_cbl', 0.20, 1.0),
-#         hp.loguniform('xgb_ra', log(1e-10), log(1e-1)),
-#         hp.quniform('xgb_mds', 0, 3, 1)
-#         ]:
-#         print(selector._parse_hyperopt_param(param.__str__()))

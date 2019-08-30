@@ -1,7 +1,7 @@
 import pathlib
 from typing import Any
 
-# Custom imports
+# Package imports
 import ptuner
 
 DB_NAME: str = "db_foo"
