@@ -1,10 +1,13 @@
 hyperopt
 joblib==0.12.5
+lightgbm
 mypy
 numpy
 pandas
 pymongo
 pytest
 pytest-cov
+sklearn
 tqdm
 typing
+xgboost
