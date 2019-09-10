@@ -21,6 +21,7 @@ jobs:
     - run:
         command: |
           . venv/bin/activate
+          cd ~/ptuner_tests/ptuner
           mkdir test-reports
           mypy --ignore-missing-imports --strict ptuner/
           pytest -v --cov 
