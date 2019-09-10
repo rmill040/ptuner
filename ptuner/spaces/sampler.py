@@ -73,7 +73,7 @@ class SpaceSampler:
         self._initialized: bool                 = False
 
 
-    def add_feature_sampler(self, sampler: Any, name: str) -> None:
+    def add_feature_sampler(self, sampler: Any, name: str) -> Any:
         """Add feature sampler to sampling scheme.
         
         Parameters
@@ -94,7 +94,7 @@ class SpaceSampler:
         return self
     
 
-    def add_hyperparameter_sampler(self, sampler: Any, name: str) -> None:
+    def add_hyperparameter_sampler(self, sampler: Any, name: str) -> Any:
         """Add hyperparameter sampler to sampling scheme.
         
         Parameters

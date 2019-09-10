@@ -1,8 +1,10 @@
 hyperopt
 joblib==0.12.5
+mypy
 numpy
 pandas
 pymongo
 pytest
+pytest-cov
 tqdm
 typing

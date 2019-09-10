@@ -62,9 +62,9 @@ class BasePipelineTuner(ABC):
                 "backend (%s) not a valid argument, " % backend, 
                 "use loky, threading, or multiprocessing"
             )
-        self.backend: str   = backend
-        self.save_name: str = save_name
-        self.verbose: bool  = verbose
+        self.backend: str             = backend
+        self.save_name: Optional[str] = save_name
+        self.verbose: bool            = verbose
 
     
     @abstractmethod

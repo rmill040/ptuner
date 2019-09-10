@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/ptuner_tests
+    docker:
+      - image: circleci/python:3.6.8
+    steps:
+    - checkout
+    - restore_cache:
+        key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+    - run:
+        name: Install Python deps in a venv
+        command: |
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install -r requirements.txt
+    - save_cache:
+        key: deps1-{{ .Branch }}-{{ checksum "requirements.txt" }}
+        paths:
+          - "venv"
+    - run:
+        command: |
+          . venv/bin/activate
+          mkdir test-reports
+          mypy --ignore-missing-imports --strict ptuner/
+          pytest -v --cov 
+    - store_test_results:
+        path: test-reports/
+    - store_artifacts:
+        path: test-reports/
+        destination: tr1

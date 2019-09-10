@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ..base._sampler import BaseSampler
 
 __all__ = [
+    'LightGBMClassifierSampler',
     'MLPClassifierSampler',
     'XGBClassifierSampler'
 ]
@@ -346,8 +347,175 @@ class XGBClassifierSampler(BaseSampler):
 
 
 class LightGBMClassifierSampler(BaseSampler):
-    # TODO: ADD HERE
-    pass
+    """Space sampler for light GBM tree classifier.
+    
+    Parameters
+    ----------
+    dynamic_update : bool
+        Whether to update hyperparameter distributions
+    
+    early_stopping : bool
+        Whether early stopping is enabled during training
+    
+    seed : int
+        Random seed
+    """
+    def __init__(
+        self, 
+        dynamic_update: bool = True, 
+        early_stopping: bool = True, 
+        seed: int = 1718
+        ) -> None:
+        self.early_stopping: bool = early_stopping
+        super().__init__(dynamic_update=dynamic_update, seed=seed)
+
+
+    def __str__(self) -> str:
+        """Print string representation of class.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        str
+            Name of class
+        """
+        return "LightGBMClassifierSampler"
+
+
+    def _starting_space(self) -> Any:
+        """Create starting space for sampler.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        dict
+            Key/value pairs, key is hyperparameter name and value is statistical 
+            distribution that can be sampled
+        """
+        return {
+            'n_estimators'      : hp.quniform('lightgbm_ne', 10, 2000, 1),
+            'learning_rate'     : hp.loguniform('lightgbm_lr', log(1e-3), log(1)),
+            'max_depth'         : hp.quniform('lightgbm_md', 1, 12, 1),
+            'min_child_weight'  : hp.quniform('lightgbm_mcw', 1, 20, 1),
+            'num_leaves'        : hp.quniform('lightgbm_nl', 30, 150, 1),
+            'subsample'         : hp.uniform('lightgbm_ss', 0.20, 1.0),
+            'subsample_for_bin' : hp.quniform('lightgbm_sfb', 20000, 300000, 20000),
+            'colsample_bytree'  : hp.uniform('lightgbm_cbt', 0.20, 1.0),
+            'reg_alpha'         : hp.loguniform('lightgbm_ra', log(1e-10), log(1e-1)),
+            'reg_lambda'        : hp.loguniform('lightgbm_rl', log(1e-10), log(1e-1)),
+            'min_child_samples' : hp.quniform('lightgbm_mcs', 20, 500, 5),
+            'class_weight'      : hp.pchoice('lightgbm_cw', [(0.5, None), (0.5, 'balanced')])
+            }
+
+
+    def sample_space(self) -> Any:
+        """Sample from hyperparameter distributions.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        dict
+            Key/value pairs, key is hyperparameter name and value is a sample from
+            the hyperparemeter's statistical distribution
+        """
+        hypers: Dict[str, Any] = {}
+        for param, dist in self.space.items():
+            hypers[param] = int(sample(dist)) \
+                if param in ['n_estimators', 'min_child_samples', 'max_depth', 
+                             'min_child_weight', 'num_leaves', 'subsample_for_bin'] \
+                    else sample(dist)
+        
+        # Add seed
+        hypers['random_state'] = self.seed
+
+        return hypers
+
+
+    def update_space(self, data: pd.DataFrame) -> None:
+        """Update hyperparameter distributions.
+        
+        Parameters
+        ----------
+        data : pandas DataFrame
+            Results of hyperparameter configurations tested
+        
+        Returns
+        -------
+        None
+        """    
+        if not self.dynamic_update: return
+
+        # Update search distributions for hyperparameters
+        for param in self.space.keys():
+            
+            if param == 'class_weight': 
+                # Make sure to cast to string since None value is deleted from value_counts
+                # and we need this as a valid value for class_weight
+                pchoice: Dict[Any, Any]           = data[param].astype(str)\
+                                                        .value_counts(True)\
+                                                        .sort_index()\
+                                                        .to_dict() 
+                pchoice_hp: List[Tuple[Any, Any]] = \
+                    [(value, key if key != 'None' else None) for key, value in pchoice.items()]
+                
+                # Update label
+                self.space[param] = hp.pchoice('lightgbm_cw', pchoice_hp)
+
+            else:
+                min_value, max_value = data[param].min(), data[param].max()
+
+                # Do not update n_estimators if early_stopping enabled
+                if param == 'n_estimators':
+                    if not self.early_stopping:
+                        self.space[param] = hp.quniform('lightgbm_ne', min_value, max_value, 1)
+                
+                elif param == 'learning_rate':
+                    self.space[param] = hp.loguniform('lightgbm_lr', log(min_value), log(max_value))
+                
+                elif param == 'max_depth': 
+                    self.space[param] = hp.quniform('lightgbm_md', min_value, max_value, 1)
+                
+                elif param == 'min_child_weight': 
+                    self.space[param] = hp.quniform('lightgbm_mcw', min_value, max_value, 1)
+                
+                elif param == 'num_leaves':
+                    self.space[param] = hp.quniform('lightgbm_nl', min_value, max_value, 1)
+
+                elif param == 'subsample':
+                    self.space[param] = hp.uniform('lightgbm_ss', min_value, max_value)
+                
+                elif param == 'subsample_for_bin':
+                    self.space[param] = hp.quniform('lightgbm_sfb', min_value, max_value, 20000)
+
+                elif param == 'colsample_bytree':
+                    self.space[param] = hp.uniform('lightgbm_cbt', min_value, max_value)
+
+                elif param == 'colsample_bylevel': 
+                    self.space[param] = hp.uniform('lightgbm_cbl', min_value, max_value)
+                
+                elif param == 'gamma':
+                    self.space[param] = hp.uniform('lightgbm_g', min_value, max_value)
+                
+                elif param == 'reg_alpha':
+                    self.space[param] = hp.loguniform('lightgbm_ra', log(min_value), log(max_value))
+
+                elif param == 'reg_lambda':
+                    self.space[param] = hp.loguniform('lightgbm_rl', log(min_value), log(max_value))
+
+                elif param == 'min_child_samples':
+                    self.space[param] = hp.quniform('lightgbm_mcs', min_value, max_value, 5)
+                
+                else:
+                    raise ValueError("%s param not found in sample space" % param)
 
 
 class SkGBMClassifierSampler(BaseSampler):

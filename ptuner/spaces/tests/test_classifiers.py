@@ -4,8 +4,94 @@ import pytest
 import re
 
 # Package imports
-from ptuner.spaces import MLPClassifierSampler, XGBClassifierSampler
+from ptuner.spaces import LightGBMClassifierSampler, MLPClassifierSampler, XGBClassifierSampler
 from ptuner.utils import helper
+
+
+@pytest.mark.parametrize("dynamic_update", [True, False])
+@pytest.mark.parametrize("early_stopping", [True, False])
+def test_lightgbm_classifier_sampler(dynamic_update, early_stopping):
+    """Tests LightGBMClassifierSampler.
+    """
+    # Define sampler
+    sampler = LightGBMClassifierSampler(
+        dynamic_update=dynamic_update,
+        early_stopping=early_stopping,
+        seed=1718
+    )
+
+    # Check 1. Make sure sampling changes values within bounds defined by user
+    df_configs = pd.DataFrame([sampler.sample_space() for _ in range(20)])
+    for column in df_configs:
+        # Remember this hyperparameter should stay fixed
+        if column == 'random_state': 
+            assert(df_configs[column].unique()[0] == 1718), \
+                "random_state should not change during sampling"
+            continue
+        
+        if column == 'class_weight':
+            assert(set(df_configs[column].unique()) == {'balanced', None}), \
+                "sampling generated incorrect values for %s, check sampling scheme" % column
+        
+        # Other hyperparameters should change across samples
+        assert(df_configs[column].unique().shape[0] > 1), \
+            "sampling generated constant values for %s, check sampling scheme" % column
+
+    # Check 2. Check dynamic updating and early_stopping features if enabled
+    df_configs = df_configs.sort_values(by="learning_rate", ascending=True)
+    df_hof     = df_configs.copy(deep=True).iloc[:5]
+
+    # Force minimum number of estimators to be greater than 10 for later assertion check
+    df_hof.loc[df_hof['n_estimators'] == 10, 'n_estimators'] = 11
+
+    # Now update space based on 'hof' candidates
+    sampler.update_space(df_hof)
+    
+    for column in df_hof:
+        # Skip these parameters
+        if column in ['random_state', 'class_weight']: continue
+
+        actual_min            = df_hof[column].min()
+        actual_max            = df_hof[column].max()
+        param_type, hp_bounds = helper.parse_hyperopt_param(str(sampler.space[column]))
+
+        # For necessary hyperparameters, make sure scale is correct
+        if param_type == 'loguniform':
+            actual_min = log(actual_min)
+            actual_max = log(actual_max)
+        
+        # Handle n_estimators for specific cases
+        if column == 'n_estimators':
+            if dynamic_update:
+
+                # With dynamic updates, having early stopping with DISABLE parameter
+                # updates
+                if early_stopping:
+                    assert(actual_min > hp_bounds[0]), \
+                    "n_estimators should not be updated with early stopping enabled, " + \
+                    "even with dynamic update enabled"
+                    continue  
+
+                # With dynamic updates, not having early stopping will ENABLE parameter
+                # updates
+                else:
+                    assert(actual_min == hp_bounds[0]), \
+                        "n_estimators should be updated with dynamic update and " + \
+                        "early stopping disabled"
+                    continue
+        
+        if dynamic_update:
+            assert(actual_min == hp_bounds[0]), \
+                "lower bound did not update correctly for %s during space update" % column
+            
+            assert(actual_max == hp_bounds[1]), \
+                "upper bound did not update correctly for %s during space update" % column 
+        else:
+            assert(actual_min >= hp_bounds[0]), \
+                "lower bound did not update correctly for %s during space update" % column
+            
+            assert(actual_max <= hp_bounds[1]), \
+                "upper bound did not update correctly for %s during space update" % column
 
 
 @pytest.mark.parametrize("dynamic_update", [True, False])

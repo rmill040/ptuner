@@ -75,8 +75,8 @@ class NaiveFeatureSampler(BaseSampler):
         Returns
         -------
         dict
-            Key/value pairs, key is hyperparameter name and value is statistical 
-            distribution that can be sampled
+            Key/value pairs, key is hyperparameter name and value is whether 
+            feature is available to model
         """
         return [True]*self.p
 
@@ -91,8 +91,8 @@ class NaiveFeatureSampler(BaseSampler):
         Returns
         -------
         dict
-            Key/value pairs, key is hyperparameter name and value is a sample from
-            the hyperparemeter's statistical distribution
+            Key/value pairs, key is hyperparameter name and value is whether
+            feature is available to model
         """
         selected: np.ndarry  = np.random.binomial(1, self.selection_probs, self.p).astype(bool)
         selected            &= np.array(self.space)
