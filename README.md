@@ -14,11 +14,3 @@ To run unit tests using pytest,
 ```python
 pytest ptuner
 ```
-
-## Requirements
-ADD HERE
-
-## Changelog
-ADD HERE
-
-https://github.com/fastai/fastai/blob/master/CHANGES.md  example here
