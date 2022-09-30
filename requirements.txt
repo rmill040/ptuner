@@ -1,5 +1,5 @@
 hyperopt
-joblib==0.12.5
+joblib==1.2.0
 lightgbm
 mypy
 numpy
